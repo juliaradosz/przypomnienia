@@ -1,0 +1,26 @@
+{% with id=widget.attrs.id %}
+<div class="color-picker-wrap d-flex flex-wrap gap-2 mt-1">
+    {% for group, options, index in widget.optgroups %}
+        {% for option in options %}
+        <label class="color-swatch {% if option.attrs.checked %}active{% endif %}"
+               style="background: {% if option.value %}{{ option.value }}{% else %}white{% endif %}; {% if not option.value %}border: 2px dashed #d1d5db;{% endif %}"
+               title="{{ option.label }}">
+            <input type="radio" name="{{ option.name }}" value="{{ option.value }}"
+                   {% if option.attrs.checked %}checked{% endif %}
+                   style="display:none;"
+                   onchange="this.closest('.color-picker-wrap').querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active')); this.parentElement.classList.add('active');">
+            {% if not option.value %}<i class="bi bi-x" style="color:#9ca3af;font-size:0.8rem;"></i>{% endif %}
+        </label>
+        {% endfor %}
+    {% endfor %}
+</div>
+<style>
+    .color-swatch {
+        width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        border: 2px solid transparent; transition: all 0.15s;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.active { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,0.3); }
+</style>
+{% endwith %}

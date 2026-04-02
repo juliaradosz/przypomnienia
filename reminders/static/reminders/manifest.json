@@ -1,0 +1,17 @@
+{
+  "name": "Przypomnienia",
+  "short_name": "Przypomnienia",
+  "description": "Zarządzaj przypomnieniami i kalendarzem",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#667eea",
+  "icons": [
+    {
+      "src": "/static/reminders/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

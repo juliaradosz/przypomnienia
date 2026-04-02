@@ -128,8 +128,9 @@ def reminder_complete(request, pk):
 
 # ── KALENDARZ ──────────────────────────────────────────────
 
-def _build_calendar(year, month, events_qs):
+def _build_calendar(year, month, events_qs, notes_by_date=None):
     today = date.today()
+    notes_by_date = notes_by_date or {}
     first_day = date(year, month, 1)
     start_weekday = first_day.weekday()
     cal_start = first_day - timedelta(days=start_weekday)
@@ -147,13 +148,18 @@ def _build_calendar(year, month, events_qs):
         week = []
         for _ in range(7):
             day_events = events_by_date.get(current, [])
-            # Kolor tła: priorytet wolne > zajęcia > egzamin > kolokwium
+            day_notes = notes_by_date.get(current, [])
+
+            # Kolor tła - bierze z calendar_bg ustawionego przez użytkownika
             bg = ''
+            for n in day_notes:
+                if n.calendar_bg:
+                    bg = n.calendar_bg
+                    break
             for e in day_events:
-                if e.bg_color:
-                    bg = e.bg_color
-                    if e.event_type == 'wolne':
-                        break  # wolne ma najwyższy priorytet
+                if e.calendar_bg:
+                    bg = e.calendar_bg
+                    break
 
             week.append({
                 'date': current,
@@ -162,6 +168,7 @@ def _build_calendar(year, month, events_qs):
                 'is_today': current == today,
                 'events': day_events,
                 'bg_color': bg,
+                'has_notes': bool(day_notes),
             })
             current += timedelta(days=1)
         weeks.append(week)
@@ -209,7 +216,14 @@ def calendar_view(request):
         selected_date = None
 
     events = Event.objects.filter(user=request.user)
-    cal = _build_calendar(year, month, events)
+
+    # Zbierz notatki dla kalendarza (kolory tła)
+    all_notes = DayNote.objects.filter(user=request.user)
+    notes_by_date = {}
+    for n in all_notes:
+        notes_by_date.setdefault(n.date, []).append(n)
+
+    cal = _build_calendar(year, month, events, notes_by_date)
 
     # Notatki i wydarzenia wybranego dnia
     day_notes = []

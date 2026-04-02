@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#g)"/>
+  <g transform="translate(96,96)">
+    <!-- Bell -->
+    <path d="M-4,-52 C-4,-56 4,-56 4,-52 C20,-48 32,-32 32,-12 L32,8 C32,8 40,12 40,20 L-40,20 C-40,12 -32,8 -32,8 L-32,-12 C-32,-32 -20,-48 -4,-52Z" fill="white" opacity="0.95"/>
+    <ellipse cx="0" cy="26" rx="10" ry="8" fill="white" opacity="0.95"/>
+    <!-- Small clock -->
+    <circle cx="22" cy="-20" r="16" fill="white" stroke="url(#g)" stroke-width="3"/>
+    <line x1="22" y1="-20" x2="22" y2="-28" stroke="#667eea" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="22" y1="-20" x2="28" y2="-18" stroke="#667eea" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

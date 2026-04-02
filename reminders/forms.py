@@ -35,6 +35,10 @@ class ReminderForm(forms.ModelForm):
         }
 
 
+class ColorPickerWidget(forms.RadioSelect):
+    template_name = 'reminders/widgets/color_picker.html'
+
+
 class EventForm(forms.ModelForm):
     date = forms.DateField(
         label='Data',
@@ -53,19 +57,20 @@ class EventForm(forms.ModelForm):
 
     class Meta:
         model = Event
-        fields = ['title', 'event_type', 'description', 'date', 'end_date', 'all_day', 'time']
+        fields = ['title', 'event_type', 'description', 'date', 'end_date', 'all_day', 'time', 'calendar_bg']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Np. Egzamin z matematyki'}),
             'event_type': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Opcjonalny opis...'}),
             'all_day': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'calendar_bg': ColorPickerWidget(choices=Event.BG_COLOR_CHOICES),
         }
 
 
 class DayNoteForm(forms.ModelForm):
     class Meta:
         model = DayNote
-        fields = ['subject', 'note', 'has_quiz', 'quiz_score', 'quiz_max', 'homework', 'is_done']
+        fields = ['subject', 'note', 'has_quiz', 'quiz_score', 'quiz_max', 'homework', 'is_done', 'calendar_bg']
         widgets = {
             'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Np. Matematyka'}),
             'note': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Notatki z zajęć...'}),
@@ -74,4 +79,5 @@ class DayNoteForm(forms.ModelForm):
             'quiz_max': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '10', 'step': '0.5'}),
             'homework': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Zadanie domowe / do przygotowania...'}),
             'is_done': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'calendar_bg': ColorPickerWidget(choices=Event.BG_COLOR_CHOICES),
         }

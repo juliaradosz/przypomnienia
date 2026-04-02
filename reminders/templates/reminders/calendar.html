@@ -34,11 +34,10 @@
     .cal-dots { display: flex; gap: 3px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
     .cal-dot { width: 6px; height: 6px; border-radius: 50%; }
 
-    /* Kolory tła komórek */
-    .cal-day-cell.bg-wolne { background: #fef2f2; }
-    .cal-day-cell.bg-zajecia { background: #eff6ff; }
-    .cal-day-cell.bg-egzamin { background: #fef9c3; }
-    .cal-day-cell.bg-kolokwium { background: #fff7ed; }
+    .cal-day-cell.has-note .cal-day-num::after {
+        content: ''; display: block; width: 4px; height: 4px;
+        background: #667eea; border-radius: 50%; margin: 2px auto 0;
+    }
 
     /* Desktop: większe komórki */
     @media (min-width: 769px) {
@@ -119,7 +118,8 @@
 
             {% for week in weeks %}
                 {% for day in week %}
-                <div class="cal-day-cell {% if not day.in_month %}other{% endif %} {% if day.is_today %}today{% endif %} {% if selected_date and day.date == selected_date %}selected{% endif %} {% for e in day.events %}{% if e.event_type == 'wolne' %}bg-wolne {% elif e.event_type == 'zajecia' %}bg-zajecia {% elif e.event_type == 'egzamin' %}bg-egzamin {% elif e.event_type == 'kolokwium' %}bg-kolokwium {% endif %}{% endfor %}"
+                <div class="cal-day-cell {% if not day.in_month %}other{% endif %} {% if day.is_today %}today{% endif %} {% if selected_date and day.date == selected_date %}selected{% endif %} {% if day.has_notes %}has-note{% endif %}"
+                     style="{% if day.bg_color %}background: {{ day.bg_color }};{% endif %}"
                      onclick="window.location.href='?year={{ year }}&month={{ month }}&day={{ day.date|date:'Y-m-d' }}'">
                     <div class="cal-day-num">{{ day.day }}</div>
                     <!-- Kropki na mobile -->
@@ -146,10 +146,6 @@
         </div>
 
         <div class="legend">
-            <span class="legend-item"><span class="legend-swatch" style="background: #fef2f2;"></span> Wolne</span>
-            <span class="legend-item"><span class="legend-swatch" style="background: #eff6ff;"></span> Zajęcia</span>
-            <span class="legend-item"><span class="legend-swatch" style="background: #fef9c3;"></span> Egzamin</span>
-            <span class="legend-item"><span class="legend-swatch" style="background: #fff7ed;"></span> Kolokwium</span>
             {% for value, label in event_types %}
             <span class="legend-item">
                 <span class="cal-dot" style="background: {% if value == 'wolne' %}#22c55e{% elif value == 'zajecia' %}#3b82f6{% elif value == 'egzamin' %}#ef4444{% elif value == 'kolokwium' %}#f59e0b{% elif value == 'projekt' %}#8b5cf6{% elif value == 'spotkanie' %}#06b6d4{% elif value == 'wyjazd' %}#14b8a6{% elif value == 'impreza' %}#ec4899{% else %}#6b7280{% endif %};"></span>

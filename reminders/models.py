@@ -163,13 +163,17 @@ class Event(models.Model):
         'inne': '#6b7280',
     }
 
-    # Kolory tła komórek kalendarza (delikatne)
-    TYPE_BG_COLORS = {
-        'wolne': '#fef2f2',      # lekko różowo-czerwony
-        'zajecia': '#eff6ff',    # lekko niebieski
-        'egzamin': '#fef9c3',    # lekko żółty
-        'kolokwium': '#fff7ed',  # lekko pomarańczowy
-    }
+    BG_COLOR_CHOICES = [
+        ('', 'Brak'),
+        ('#e8f0fe', 'Niebieski'),
+        ('#fef2f2', 'Różowy'),
+        ('#fef9c3', 'Żółty'),
+        ('#dcfce7', 'Zielony'),
+        ('#f3e8ff', 'Fioletowy'),
+        ('#fff7ed', 'Pomarańczowy'),
+        ('#f0f9ff', 'Jasny niebieski'),
+        ('#fdf2f8', 'Jasny różowy'),
+    ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='events')
     title = models.CharField('Tytuł', max_length=200)
@@ -181,6 +185,8 @@ class Event(models.Model):
     all_day = models.BooleanField('Cały dzień', default=True)
     time = models.TimeField('Godzina', blank=True, null=True,
                             help_text='Opcjonalnie, jeśli nie cały dzień')
+    calendar_bg = models.CharField('Kolor tła w kalendarzu', max_length=10,
+                                   choices=BG_COLOR_CHOICES, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -201,7 +207,7 @@ class Event(models.Model):
 
     @property
     def bg_color(self):
-        return self.TYPE_BG_COLORS.get(self.event_type, '')
+        return self.calendar_bg
 
     @property
     def is_multiday(self):
@@ -220,6 +226,8 @@ class Event(models.Model):
 
 class DayNote(models.Model):
     """Notatki do konkretnego dnia - zajęcia, wejściówki, punkty."""
+    BG_COLOR_CHOICES = Event.BG_COLOR_CHOICES
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='day_notes')
     date = models.DateField('Data')
     subject = models.CharField('Przedmiot', max_length=200)
@@ -231,6 +239,8 @@ class DayNote(models.Model):
                                    blank=True, null=True)
     homework = models.TextField('Zadanie domowe / do zrobienia', blank=True)
     is_done = models.BooleanField('Zrobione', default=False)
+    calendar_bg = models.CharField('Kolor tła w kalendarzu', max_length=10,
+                                   choices=Event.BG_COLOR_CHOICES, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
