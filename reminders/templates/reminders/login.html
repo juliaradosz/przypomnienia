@@ -3,11 +3,15 @@
 {% block title %}Logowanie{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="text-center mb-4">
+            <i class="bi bi-bell-fill display-4" style="color: #667eea;"></i>
+            <h2 class="mt-2">Witaj ponownie!</h2>
+            <p class="text-muted">Zaloguj się do swojego konta</p>
+        </div>
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h3 class="text-center mb-4"><i class="bi bi-box-arrow-in-right"></i> Logowanie</h3>
                 <form method="post">
                     {% csrf_token %}
                     {% for field in form %}
@@ -16,16 +20,20 @@
                         <input type="{{ field.field.widget.input_type }}"
                                name="{{ field.name }}"
                                class="form-control {% if field.errors %}is-invalid{% endif %}"
-                               value="{{ field.value|default:'' }}">
+                               value="{{ field.value|default:'' }}"
+                               placeholder="{{ field.label }}">
                         {% for error in field.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
                     {% endfor %}
-                    <button type="submit" class="btn btn-primary w-100">Zaloguj się</button>
+                    <button type="submit" class="btn btn-primary w-100 py-2">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Zaloguj się
+                    </button>
                 </form>
-                <p class="text-center mt-3">
-                    Nie masz konta? <a href="{% url 'register' %}">Zarejestruj się</a>
+                <hr>
+                <p class="text-center mb-0">
+                    Nie masz konta? <a href="{% url 'register' %}" style="color: #667eea;">Zarejestruj się</a>
                 </p>
             </div>
         </div>

@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+import datetime
 
 
 class Reminder(models.Model):
@@ -15,12 +17,47 @@ class Reminder(models.Model):
         ('inne', 'Inne'),
     ]
 
+    CATEGORY_ICONS = {
+        'dowod': 'bi-person-badge',
+        'paszport': 'bi-globe-europe-africa',
+        'prawo_jazdy': 'bi-car-front',
+        'ubezpieczenie': 'bi-shield-check',
+        'przeglad': 'bi-tools',
+        'smieci': 'bi-trash3',
+        'rachunki': 'bi-wallet2',
+        'lekarz': 'bi-heart-pulse',
+        'inne': 'bi-bookmark',
+    }
+
+    CATEGORY_COLORS = {
+        'dowod': '#6366f1',
+        'paszport': '#8b5cf6',
+        'prawo_jazdy': '#3b82f6',
+        'ubezpieczenie': '#06b6d4',
+        'przeglad': '#f59e0b',
+        'smieci': '#22c55e',
+        'rachunki': '#ef4444',
+        'lekarz': '#ec4899',
+        'inne': '#6b7280',
+    }
+
+    REPEAT_CHOICES = [
+        ('none', 'Bez powtarzania'),
+        ('weekly', 'Co tydzień'),
+        ('biweekly', 'Co 2 tygodnie'),
+        ('monthly', 'Co miesiąc'),
+        ('quarterly', 'Co kwartał'),
+        ('yearly', 'Co rok'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reminders')
     title = models.CharField('Tytuł', max_length=200)
     category = models.CharField('Kategoria', max_length=30, choices=CATEGORY_CHOICES, default='inne')
     description = models.TextField('Opis', blank=True)
     due_date = models.DateField('Termin')
     remind_days_before = models.PositiveIntegerField('Przypomnij dni przed terminem', default=7)
+    repeat = models.CharField('Powtarzanie', max_length=20, choices=REPEAT_CHOICES, default='none')
+    is_done = models.BooleanField('Wykonane', default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -32,18 +69,64 @@ class Reminder(models.Model):
         return f'{self.title} ({self.get_category_display()}) - {self.due_date}'
 
     @property
+    def icon(self):
+        return self.CATEGORY_ICONS.get(self.category, 'bi-bookmark')
+
+    @property
+    def color(self):
+        return self.CATEGORY_COLORS.get(self.category, '#6b7280')
+
+    @property
     def is_urgent(self):
-        from django.utils import timezone
         today = timezone.now().date()
         delta = (self.due_date - today).days
-        return 0 <= delta <= self.remind_days_before
+        return 0 <= delta <= self.remind_days_before and not self.is_done
 
     @property
     def is_expired(self):
-        from django.utils import timezone
-        return self.due_date < timezone.now().date()
+        return self.due_date < timezone.now().date() and not self.is_done
 
     @property
     def days_left(self):
-        from django.utils import timezone
         return (self.due_date - timezone.now().date()).days
+
+    @property
+    def status(self):
+        if self.is_done:
+            return 'done'
+        if self.is_expired:
+            return 'expired'
+        if self.is_urgent:
+            return 'urgent'
+        return 'ok'
+
+    def complete_and_renew(self):
+        """Mark as done. If repeating, create next occurrence."""
+        self.is_done = True
+        self.save()
+
+        if self.repeat == 'none':
+            return None
+
+        delta_map = {
+            'weekly': datetime.timedelta(weeks=1),
+            'biweekly': datetime.timedelta(weeks=2),
+            'monthly': datetime.timedelta(days=30),
+            'quarterly': datetime.timedelta(days=91),
+            'yearly': datetime.timedelta(days=365),
+        }
+        delta = delta_map.get(self.repeat)
+        if delta:
+            new_date = self.due_date + delta
+            while new_date <= timezone.now().date():
+                new_date += delta
+            return Reminder.objects.create(
+                user=self.user,
+                title=self.title,
+                category=self.category,
+                description=self.description,
+                due_date=new_date,
+                remind_days_before=self.remind_days_before,
+                repeat=self.repeat,
+            )
+        return None

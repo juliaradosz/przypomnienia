@@ -7,7 +7,9 @@ urlpatterns = [
     path('rejestracja/', views.register_view, name='register'),
     path('logowanie/', auth_views.LoginView.as_view(template_name='reminders/login.html'), name='login'),
     path('wyloguj/', auth_views.LogoutView.as_view(), name='logout'),
+    path('profil/', views.profile_view, name='profile'),
     path('dodaj/', views.reminder_add, name='reminder_add'),
     path('edytuj/<int:pk>/', views.reminder_edit, name='reminder_edit'),
     path('usun/<int:pk>/', views.reminder_delete, name='reminder_delete'),
+    path('wykonane/<int:pk>/', views.reminder_complete, name='reminder_complete'),
 ]
