@@ -233,28 +233,12 @@ def calendar_view(request):
         day_events = Event.objects.filter(user=request.user)
         day_events = [e for e in day_events if selected_date in e.dates_range()]
 
-    # Statystyki punktów per przedmiot
-    quiz_notes = DayNote.objects.filter(user=request.user, has_quiz=True, quiz_score__isnull=False)
-    subject_stats = {}
-    for n in quiz_notes:
-        label = n.get_subject_display()
-        if label not in subject_stats:
-            subject_stats[label] = {'total_score': 0, 'total_max': 0, 'count': 0, 'scores': []}
-        s = subject_stats[label]
-        s['total_score'] += float(n.quiz_score)
-        s['total_max'] += float(n.quiz_max) if n.quiz_max else 0
-        s['count'] += 1
-        s['scores'].append({'score': float(n.quiz_score), 'max': float(n.quiz_max) if n.quiz_max else 0, 'date': n.date})
-    for label, s in subject_stats.items():
-        s['percent'] = round(s['total_score'] / s['total_max'] * 100) if s['total_max'] > 0 else 0
-
     return render(request, 'reminders/calendar.html', {
         **cal,
         'event_types': Event.TYPE_CHOICES,
         'selected_date': selected_date,
         'day_notes': day_notes,
         'day_events': day_events,
-        'subject_stats': subject_stats,
     })
 
 
@@ -391,6 +375,47 @@ def calendar_api(request):
             'time': e.time.strftime('%H:%M') if e.time else None,
         })
     return JsonResponse(result, safe=False)
+
+
+# ── OCENY ──────────────────────────────────────────────────
+
+@login_required
+def grades_view(request):
+    quiz_notes = DayNote.objects.filter(
+        user=request.user, has_quiz=True, quiz_score__isnull=False
+    ).order_by('date')
+
+    subject_stats = {}
+    for n in quiz_notes:
+        key = n.subject
+        label = n.get_subject_display()
+        if key not in subject_stats:
+            subject_stats[key] = {
+                'label': label,
+                'total_score': 0,
+                'total_max': 0,
+                'has_max': False,
+                'count': 0,
+                'entries': [],
+            }
+        s = subject_stats[key]
+        s['total_score'] += float(n.quiz_score)
+        if n.quiz_max and n.quiz_max > 0:
+            s['total_max'] += float(n.quiz_max)
+            s['has_max'] = True
+        s['count'] += 1
+        s['entries'].append(n)
+
+    for key, s in subject_stats.items():
+        if s['has_max'] and s['total_max'] > 0:
+            s['percent'] = round(s['total_score'] / s['total_max'] * 100)
+        else:
+            s['percent'] = None
+
+    return render(request, 'reminders/grades.html', {
+        'subject_stats': subject_stats,
+        'subjects': DayNote.SUBJECT_CHOICES,
+    })
 
 
 # ── PROFIL ──────────────────────────────────────────────────

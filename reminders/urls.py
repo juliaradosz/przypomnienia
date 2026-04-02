@@ -24,4 +24,6 @@ urlpatterns = [
     path('notatka/edytuj/<int:pk>/', views.note_edit, name='note_edit'),
     path('notatka/usun/<int:pk>/', views.note_delete, name='note_delete'),
     path('notatka/toggle/<int:pk>/', views.note_toggle, name='note_toggle'),
+    # Oceny
+    path('oceny/', views.grades_view, name='grades'),
 ]
