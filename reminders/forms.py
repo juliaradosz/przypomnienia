@@ -72,7 +72,7 @@ class DayNoteForm(forms.ModelForm):
         model = DayNote
         fields = ['subject', 'note', 'has_quiz', 'quiz_score', 'quiz_max', 'homework', 'is_done', 'calendar_bg']
         widgets = {
-            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Np. Matematyka'}),
+            'subject': forms.Select(attrs={'class': 'form-select'}),
             'note': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Notatki z zajęć...'}),
             'has_quiz': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'quiz_score': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'step': '0.5'}),

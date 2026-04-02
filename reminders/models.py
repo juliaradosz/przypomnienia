@@ -228,9 +228,18 @@ class DayNote(models.Model):
     """Notatki do konkretnego dnia - zajęcia, wejściówki, punkty."""
     BG_COLOR_CHOICES = Event.BG_COLOR_CHOICES
 
+    SUBJECT_CHOICES = [
+        ('zts', 'Zaawansowane technologie sieciowe'),
+        ('gbd', 'Grafowe bazy danych'),
+        ('sem', 'Seminarium'),
+        ('pw', 'Programowanie współbieżne'),
+        ('python', 'Programowanie w języku Python'),
+        ('cpp', 'Zaawansowane programowanie w C++'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='day_notes')
     date = models.DateField('Data')
-    subject = models.CharField('Przedmiot', max_length=200)
+    subject = models.CharField('Przedmiot', max_length=200, choices=SUBJECT_CHOICES)
     note = models.TextField('Notatka / co do zrobienia', blank=True)
     has_quiz = models.BooleanField('Wejściówka', default=False)
     quiz_score = models.DecimalField('Punkty z wejściówki', max_digits=5, decimal_places=1,
