@@ -12,4 +12,6 @@ urlpatterns = [
     path('edytuj/<int:pk>/', views.reminder_edit, name='reminder_edit'),
     path('usun/<int:pk>/', views.reminder_delete, name='reminder_delete'),
     path('wykonane/<int:pk>/', views.reminder_complete, name='reminder_complete'),
+    path('kalendarz/', views.calendar_view, name='calendar'),
+    path('api/kalendarz/', views.calendar_api, name='calendar_api'),
 ]

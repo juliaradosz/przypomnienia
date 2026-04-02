@@ -14,6 +14,7 @@ class Reminder(models.Model):
         ('smieci', 'Wywóz śmieci'),
         ('rachunki', 'Rachunki / opłaty'),
         ('lekarz', 'Wizyta u lekarza'),
+        ('studia', 'Studia / egzamin'),
         ('inne', 'Inne'),
     ]
 
@@ -26,6 +27,7 @@ class Reminder(models.Model):
         'smieci': 'bi-trash3',
         'rachunki': 'bi-wallet2',
         'lekarz': 'bi-heart-pulse',
+        'studia': 'bi-mortarboard',
         'inne': 'bi-bookmark',
     }
 
@@ -38,6 +40,7 @@ class Reminder(models.Model):
         'smieci': '#22c55e',
         'rachunki': '#ef4444',
         'lekarz': '#ec4899',
+        'studia': '#f472b6',
         'inne': '#6b7280',
     }
 
