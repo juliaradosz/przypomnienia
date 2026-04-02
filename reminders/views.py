@@ -113,9 +113,9 @@ def reminder_delete(request, pk):
 def reminder_complete(request, pk):
     reminder = get_object_or_404(Reminder, pk=pk, user=request.user)
     if request.method == 'POST':
-        new_reminder = reminder.complete_and_renew()
-        if new_reminder:
-            messages.success(request, f'Oznaczono jako wykonane! Następne przypomnienie: {new_reminder.due_date}')
+        result = reminder.complete_and_renew()
+        if result and not reminder.is_done:
+            messages.success(request, f'Termin przesunięty na {result.due_date}!')
         else:
             messages.success(request, 'Oznaczono jako wykonane!')
         return redirect('dashboard')

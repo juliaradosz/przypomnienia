@@ -101,11 +101,10 @@ class Reminder(models.Model):
         return 'ok'
 
     def complete_and_renew(self):
-        """Mark as done. If repeating, create next occurrence."""
-        self.is_done = True
-        self.save()
-
+        """Mark as done, or advance date if repeating."""
         if self.repeat == 'none':
+            self.is_done = True
+            self.save()
             return None
 
         delta_map = {
@@ -120,13 +119,7 @@ class Reminder(models.Model):
             new_date = self.due_date + delta
             while new_date <= timezone.now().date():
                 new_date += delta
-            return Reminder.objects.create(
-                user=self.user,
-                title=self.title,
-                category=self.category,
-                description=self.description,
-                due_date=new_date,
-                remind_days_before=self.remind_days_before,
-                repeat=self.repeat,
-            )
+            self.due_date = new_date
+            self.save()
+            return self
         return None
