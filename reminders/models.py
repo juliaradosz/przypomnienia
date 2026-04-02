@@ -104,7 +104,7 @@ class Reminder(models.Model):
         return 'ok'
 
     def complete_and_renew(self):
-        """Mark as done, or advance date if repeating."""
+        """Oznacz jako wykonane, lub przesuń datę jeśli cykliczne."""
         if self.repeat == 'none':
             self.is_done = True
             self.save()
@@ -126,3 +126,81 @@ class Reminder(models.Model):
             self.save()
             return self
         return None
+
+
+class Event(models.Model):
+    TYPE_CHOICES = [
+        ('wolne', 'Dzień wolny'),
+        ('egzamin', 'Egzamin'),
+        ('kolokwium', 'Kolokwium'),
+        ('projekt', 'Oddanie projektu'),
+        ('spotkanie', 'Spotkanie'),
+        ('wyjazd', 'Wyjazd / urlop'),
+        ('impreza', 'Impreza / wydarzenie'),
+        ('inne', 'Inne'),
+    ]
+
+    TYPE_ICONS = {
+        'wolne': 'bi-sun',
+        'egzamin': 'bi-mortarboard',
+        'kolokwium': 'bi-pencil-square',
+        'projekt': 'bi-folder-check',
+        'spotkanie': 'bi-people',
+        'wyjazd': 'bi-airplane',
+        'impreza': 'bi-star',
+        'inne': 'bi-calendar-event',
+    }
+
+    TYPE_COLORS = {
+        'wolne': '#22c55e',
+        'egzamin': '#ef4444',
+        'kolokwium': '#f59e0b',
+        'projekt': '#8b5cf6',
+        'spotkanie': '#3b82f6',
+        'wyjazd': '#06b6d4',
+        'impreza': '#ec4899',
+        'inne': '#6b7280',
+    }
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='events')
+    title = models.CharField('Tytuł', max_length=200)
+    event_type = models.CharField('Typ', max_length=30, choices=TYPE_CHOICES, default='inne')
+    description = models.TextField('Opis', blank=True)
+    date = models.DateField('Data')
+    end_date = models.DateField('Data końcowa', blank=True, null=True,
+                                help_text='Zostaw puste jeśli jednodniowe')
+    all_day = models.BooleanField('Cały dzień', default=True)
+    time = models.TimeField('Godzina', blank=True, null=True,
+                            help_text='Opcjonalnie, jeśli nie cały dzień')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date', 'time']
+        verbose_name = 'Wydarzenie'
+        verbose_name_plural = 'Wydarzenia'
+
+    def __str__(self):
+        return f'{self.title} ({self.get_event_type_display()}) - {self.date}'
+
+    @property
+    def icon(self):
+        return self.TYPE_ICONS.get(self.event_type, 'bi-calendar-event')
+
+    @property
+    def color(self):
+        return self.TYPE_COLORS.get(self.event_type, '#6b7280')
+
+    @property
+    def is_multiday(self):
+        return self.end_date and self.end_date > self.date
+
+    def dates_range(self):
+        """Zwraca listę wszystkich dat wydarzenia."""
+        if not self.end_date or self.end_date <= self.date:
+            return [self.date]
+        days = []
+        current = self.date
+        while current <= self.end_date:
+            days.append(current)
+            current += datetime.timedelta(days=1)
+        return days

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Reminder
+from .models import Reminder, Event
 
 
 class RegisterForm(UserCreationForm):
@@ -32,4 +32,31 @@ class ReminderForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Opcjonalny opis...'}),
             'remind_days_before': forms.NumberInput(attrs={'class': 'form-control'}),
             'repeat': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class EventForm(forms.ModelForm):
+    date = forms.DateField(
+        label='Data',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+    )
+    end_date = forms.DateField(
+        label='Data końcowa',
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+    )
+    time = forms.TimeField(
+        label='Godzina',
+        required=False,
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+    )
+
+    class Meta:
+        model = Event
+        fields = ['title', 'event_type', 'description', 'date', 'end_date', 'all_day', 'time']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Np. Egzamin z matematyki'}),
+            'event_type': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Opcjonalny opis...'}),
+            'all_day': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

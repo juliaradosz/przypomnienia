@@ -7,8 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Reminder
-from .forms import RegisterForm, ReminderForm
+from .models import Reminder, Event
+from .forms import RegisterForm, ReminderForm, EventForm
 
 
 def register_view(request):
@@ -24,11 +24,12 @@ def register_view(request):
     return render(request, 'reminders/register.html', {'form': form})
 
 
+# ── PRZYPOMNIENIA ──────────────────────────────────────────
+
 @login_required
 def dashboard_view(request):
     reminders = Reminder.objects.filter(user=request.user)
 
-    # Filtrowanie
     category = request.GET.get('category', '')
     search = request.GET.get('search', '')
     show = request.GET.get('show', 'active')
@@ -53,7 +54,6 @@ def dashboard_view(request):
         expired = [r for r in reminders if r.is_expired]
         upcoming = [r for r in reminders if not r.is_expired and not r.is_urgent]
 
-    # Statystyki
     all_reminders = Reminder.objects.filter(user=request.user, is_done=False)
     stats = {
         'total': all_reminders.count(),
@@ -126,33 +126,23 @@ def reminder_complete(request, pk):
     return redirect('dashboard')
 
 
-@login_required
-def calendar_view(request):
-    today = date.today()
-    year = int(request.GET.get('year', today.year))
-    month = int(request.GET.get('month', today.month))
+# ── KALENDARZ ──────────────────────────────────────────────
 
-    # Granice miesiąca
+def _build_calendar(year, month, events_qs):
+    """Buduje strukturę kalendarza z wydarzeniami."""
+    today = date.today()
     first_day = date(year, month, 1)
-    # Dni tygodnia od poniedziałku
-    start_weekday = first_day.weekday()  # 0=pon
+    start_weekday = first_day.weekday()
     cal_start = first_day - timedelta(days=start_weekday)
-    # Zawsze 6 tygodni dla równego gridu
     cal_end = cal_start + timedelta(days=41)
 
-    reminders = Reminder.objects.filter(
-        user=request.user,
-        is_done=False,
-        due_date__gte=cal_start,
-        due_date__lte=cal_end,
-    )
+    # Zbierz wszystkie daty z wydarzeń (w tym wielodniowe)
+    events_by_date = {}
+    for e in events_qs:
+        for d in e.dates_range():
+            if cal_start <= d <= cal_end:
+                events_by_date.setdefault(d, []).append(e)
 
-    # Mapowanie: data -> lista przypomnień
-    reminders_by_date = {}
-    for r in reminders:
-        reminders_by_date.setdefault(r.due_date, []).append(r)
-
-    # Budowanie kalendarza
     weeks = []
     current = cal_start
     for _ in range(6):
@@ -163,12 +153,11 @@ def calendar_view(request):
                 'day': current.day,
                 'in_month': current.month == month,
                 'is_today': current == today,
-                'reminders': reminders_by_date.get(current, []),
+                'events': events_by_date.get(current, []),
             })
             current += timedelta(days=1)
         weeks.append(week)
 
-    # Nawigacja prev/next
     if month == 1:
         prev_year, prev_month = year - 1, 12
     else:
@@ -183,7 +172,7 @@ def calendar_view(request):
         'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień',
     ]
 
-    return render(request, 'reminders/calendar.html', {
+    return {
         'weeks': weeks,
         'month_name': month_names[month],
         'year': year,
@@ -192,34 +181,98 @@ def calendar_view(request):
         'prev_month': prev_month,
         'next_year': next_year,
         'next_month': next_month,
+    }
+
+
+@login_required
+def calendar_view(request):
+    today = date.today()
+    year = int(request.GET.get('year', today.year))
+    month = int(request.GET.get('month', today.month))
+
+    events = Event.objects.filter(user=request.user)
+    cal = _build_calendar(year, month, events)
+
+    # Lista nadchodzących wydarzeń (sidebar)
+    upcoming_events = Event.objects.filter(
+        user=request.user, date__gte=today
+    ).order_by('date')[:10]
+
+    return render(request, 'reminders/calendar.html', {
+        **cal,
+        'upcoming_events': upcoming_events,
+        'event_types': Event.TYPE_CHOICES,
     })
 
 
 @login_required
+def event_add(request):
+    initial = {}
+    if request.GET.get('date'):
+        initial['date'] = request.GET['date']
+    if request.method == 'POST':
+        form = EventForm(request.POST)
+        if form.is_valid():
+            event = form.save(commit=False)
+            event.user = request.user
+            event.save()
+            messages.success(request, 'Wydarzenie dodane!')
+            return redirect('calendar')
+    else:
+        form = EventForm(initial=initial)
+    return render(request, 'reminders/event_form.html', {'form': form, 'title': 'Dodaj wydarzenie'})
+
+
+@login_required
+def event_edit(request, pk):
+    event = get_object_or_404(Event, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = EventForm(request.POST, instance=event)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Wydarzenie zaktualizowane!')
+            return redirect('calendar')
+    else:
+        form = EventForm(instance=event)
+    return render(request, 'reminders/event_form.html', {'form': form, 'title': 'Edytuj wydarzenie'})
+
+
+@login_required
+def event_delete(request, pk):
+    event = get_object_or_404(Event, pk=pk, user=request.user)
+    if request.method == 'POST':
+        event.delete()
+        messages.success(request, 'Wydarzenie usunięte!')
+        return redirect('calendar')
+    return render(request, 'reminders/event_confirm_delete.html', {'event': event})
+
+
+@login_required
 def calendar_api(request):
-    """JSON API do pobrania przypomnień w zakresie dat."""
     start = request.GET.get('start')
     end = request.GET.get('end')
-    reminders = Reminder.objects.filter(user=request.user, is_done=False)
+    events = Event.objects.filter(user=request.user)
     if start:
-        reminders = reminders.filter(due_date__gte=start)
+        events = events.filter(date__gte=start)
     if end:
-        reminders = reminders.filter(due_date__lte=end)
+        events = events.filter(date__lte=end)
 
-    events = []
-    for r in reminders:
-        events.append({
-            'id': r.pk,
-            'title': r.title,
-            'date': r.due_date.isoformat(),
-            'category': r.get_category_display(),
-            'color': r.color,
-            'icon': r.icon,
-            'days_left': r.days_left,
-            'status': r.status,
+    result = []
+    for e in events:
+        result.append({
+            'id': e.pk,
+            'title': e.title,
+            'date': e.date.isoformat(),
+            'end_date': e.end_date.isoformat() if e.end_date else None,
+            'type': e.get_event_type_display(),
+            'color': e.color,
+            'icon': e.icon,
+            'time': e.time.strftime('%H:%M') if e.time else None,
         })
-    return JsonResponse(events, safe=False)
+    return JsonResponse(result, safe=False)
 
+
+# ── PROFIL ──────────────────────────────────────────────────
 
 @login_required
 def profile_view(request):
@@ -239,5 +292,6 @@ def profile_view(request):
     stats = {
         'total': Reminder.objects.filter(user=request.user, is_done=False).count(),
         'done': Reminder.objects.filter(user=request.user, is_done=True).count(),
+        'events': Event.objects.filter(user=request.user, date__gte=date.today()).count(),
     }
     return render(request, 'reminders/profile.html', {'form': form, 'stats': stats})

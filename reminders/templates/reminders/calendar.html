@@ -11,186 +11,153 @@
         margin-bottom: 1.5rem;
     }
     .cal-nav-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: none;
-        background: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #667eea;
-        font-size: 1.2rem;
-        transition: all 0.2s;
+        width: 40px; height: 40px; border-radius: 50%; border: none;
+        background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex; align-items: center; justify-content: center;
+        color: #667eea; font-size: 1.2rem; transition: all 0.2s;
+        text-decoration: none;
     }
-    .cal-nav-btn:hover {
-        background: var(--primary-gradient);
-        color: white;
-        transform: scale(1.1);
-    }
-    .cal-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 4px;
-    }
-    .cal-table th {
-        text-align: center;
-        padding: 10px;
-        font-size: 0.85rem;
-        color: #6b7280;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
+    .cal-nav-btn:hover { background: linear-gradient(135deg, #667eea, #764ba2); color: white; transform: scale(1.1); }
+    .cal-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
+    .cal-table th { text-align: center; padding: 10px; font-size: 0.8rem; color: #6b7280; font-weight: 600; text-transform: uppercase; }
     .cal-cell {
-        background: white;
-        border-radius: 12px;
-        vertical-align: top;
-        padding: 8px;
-        height: 110px;
-        transition: all 0.2s;
-        position: relative;
+        background: white; border-radius: 12px; vertical-align: top;
+        padding: 8px; height: 120px; transition: all 0.2s; position: relative; cursor: pointer;
     }
-    .cal-cell:hover {
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        transform: translateY(-1px);
-    }
-    .cal-cell.other-month {
-        background: #f9fafb;
-        opacity: 0.5;
-    }
-    .cal-cell.today {
-        box-shadow: 0 0 0 2px #667eea;
-    }
-    .cal-day {
-        font-weight: 700;
-        font-size: 0.9rem;
-        color: #374151;
-        margin-bottom: 4px;
-    }
+    .cal-cell:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    .cal-cell.other-month { background: #f9fafb; opacity: 0.5; }
+    .cal-cell.today { box-shadow: 0 0 0 2px #667eea; }
+    .cal-day { font-weight: 700; font-size: 0.85rem; color: #374151; margin-bottom: 4px; }
     .cal-cell.today .cal-day {
         background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        color: white; width: 26px; height: 26px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
     }
     .cal-event {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        margin-bottom: 2px;
-        color: white;
-        text-decoration: none;
-        transition: all 0.2s;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+        display: flex; align-items: center; gap: 3px;
+        padding: 2px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 500;
+        margin-bottom: 2px; color: white; text-decoration: none; transition: all 0.2s;
+        overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
     }
-    .cal-event:hover {
-        filter: brightness(1.15);
-        color: white;
-        transform: scale(1.02);
+    .cal-event:hover { filter: brightness(1.15); color: white; }
+    .cal-more { font-size: 0.6rem; color: #6b7280; text-align: center; }
+    .sidebar-event {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px; border-radius: 10px; background: #f9fafb;
+        margin-bottom: 8px; transition: all 0.2s;
     }
-    .cal-more {
-        font-size: 0.65rem;
-        color: #6b7280;
-        text-align: center;
-        cursor: default;
+    .sidebar-event:hover { background: #f0f2f5; }
+    .sidebar-icon {
+        width: 36px; height: 36px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 1rem; flex-shrink: 0;
     }
-    .legend {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 1.5rem;
-    }
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.8rem;
-        color: #4b5563;
-    }
-    .legend-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 4px;
-    }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #4b5563; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 </style>
 
-<div class="cal-header">
-    <a href="?year={{ prev_year }}&month={{ prev_month }}" class="cal-nav-btn">
-        <i class="bi bi-chevron-left"></i>
-    </a>
-    <h3 class="mb-0">
-        <i class="bi bi-calendar3" style="color: #667eea;"></i>
-        {{ month_name }} {{ year }}
-    </h3>
-    <a href="?year={{ next_year }}&month={{ next_month }}" class="cal-nav-btn">
-        <i class="bi bi-chevron-right"></i>
-    </a>
-</div>
+<div class="row">
+    <!-- Kalendarz -->
+    <div class="col-lg-8">
+        <div class="cal-header">
+            <a href="?year={{ prev_year }}&month={{ prev_month }}" class="cal-nav-btn">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            <h3 class="mb-0">
+                <i class="bi bi-calendar3" style="color: #667eea;"></i>
+                {{ month_name }} {{ year }}
+            </h3>
+            <a href="?year={{ next_year }}&month={{ next_month }}" class="cal-nav-btn">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
 
-<div class="table-responsive">
-    <table class="cal-table">
-        <thead>
-            <tr>
-                <th>Pon</th>
-                <th>Wt</th>
-                <th>Śr</th>
-                <th>Czw</th>
-                <th>Pt</th>
-                <th>Sob</th>
-                <th>Ndz</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for week in weeks %}
-            <tr>
-                {% for day in week %}
-                <td class="cal-cell {% if not day.in_month %}other-month{% endif %} {% if day.is_today %}today{% endif %}">
-                    <div class="cal-day">{{ day.day }}</div>
-                    {% for r in day.reminders %}
-                        {% if forloop.counter <= 2 %}
-                        <a href="{% url 'reminder_edit' r.pk %}" class="cal-event d-block" style="background-color: {{ r.color }};" title="{{ r.title }} - {{ r.get_category_display }}">
-                            <i class="bi {{ r.icon }}"></i> {{ r.title }}
-                        </a>
-                        {% endif %}
-                        {% if forloop.counter == 3 %}
-                        <div class="cal-more">+{{ day.reminders|length|add:"-2" }} więcej</div>
-                        {% endif %}
+        <div class="table-responsive">
+            <table class="cal-table">
+                <thead>
+                    <tr>
+                        <th>Pon</th><th>Wt</th><th>Śr</th><th>Czw</th><th>Pt</th><th>Sob</th><th>Ndz</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in weeks %}
+                    <tr>
+                        {% for day in week %}
+                        <td class="cal-cell {% if not day.in_month %}other-month{% endif %} {% if day.is_today %}today{% endif %}"
+                            onclick="window.location.href='{% url 'event_add' %}?date={{ day.date|date:'Y-m-d' }}'">
+                            <div class="cal-day">{{ day.day }}</div>
+                            {% for e in day.events %}
+                                {% if forloop.counter <= 2 %}
+                                <a href="{% url 'event_edit' e.pk %}" class="cal-event d-block"
+                                   style="background-color: {{ e.color }};"
+                                   title="{{ e.title }} - {{ e.get_event_type_display }}{% if e.time %} o {{ e.time|time:'H:i' }}{% endif %}"
+                                   onclick="event.stopPropagation();">
+                                    <i class="bi {{ e.icon }}"></i> {{ e.title }}
+                                </a>
+                                {% endif %}
+                                {% if forloop.counter == 3 %}
+                                <div class="cal-more">+{{ day.events|length|add:"-2" }} więcej</div>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
-                </td>
-                {% endfor %}
-            </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legend">
+            {% for value, label in event_types %}
+            <span class="legend-item">
+                <span class="legend-dot" style="background: {% if value == 'wolne' %}#22c55e{% elif value == 'egzamin' %}#ef4444{% elif value == 'kolokwium' %}#f59e0b{% elif value == 'projekt' %}#8b5cf6{% elif value == 'spotkanie' %}#3b82f6{% elif value == 'wyjazd' %}#06b6d4{% elif value == 'impreza' %}#ec4899{% else %}#6b7280{% endif %};"></span>
+                {{ label }}
+            </span>
             {% endfor %}
-        </tbody>
-    </table>
-</div>
+        </div>
+    </div>
 
-<div class="legend">
-    <span class="legend-item"><span class="legend-dot" style="background: #6366f1;"></span> Dowód</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #8b5cf6;"></span> Paszport</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #3b82f6;"></span> Prawo jazdy</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #06b6d4;"></span> Ubezpieczenie</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> Przegląd</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #22c55e;"></span> Śmieci</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #ef4444;"></span> Rachunki</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #ec4899;"></span> Lekarz</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #f472b6;"></span> Studia</span>
-    <span class="legend-item"><span class="legend-dot" style="background: #6b7280;"></span> Inne</span>
-</div>
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-list-ul" style="color: #667eea;"></i> Nadchodzące</h5>
+                    <a href="{% url 'event_add' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg"></i> Dodaj
+                    </a>
+                </div>
 
-<div class="text-center mt-4">
-    <a href="{% url 'reminder_add' %}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Dodaj przypomnienie
-    </a>
+                {% if upcoming_events %}
+                    {% for e in upcoming_events %}
+                    <div class="sidebar-event">
+                        <div class="sidebar-icon" style="background-color: {{ e.color }};">
+                            <i class="bi {{ e.icon }}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold small">{{ e.title }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                <i class="bi bi-calendar"></i> {{ e.date|date:"d.m.Y" }}
+                                {% if e.end_date %} - {{ e.end_date|date:"d.m.Y" }}{% endif %}
+                                {% if e.time %} <i class="bi bi-clock ms-1"></i> {{ e.time|time:"H:i" }}{% endif %}
+                            </div>
+                            <span class="badge badge-status mt-1" style="background-color: {{ e.color }}; font-size: 0.6rem;">{{ e.get_event_type_display }}</span>
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'event_edit' e.pk %}" class="btn btn-sm btn-outline-primary py-0 px-1" title="Edytuj"><i class="bi bi-pencil"></i></a>
+                            <a href="{% url 'event_delete' e.pk %}" class="btn btn-sm btn-outline-danger py-0 px-1" title="Usuń"><i class="bi bi-trash"></i></a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-calendar-x display-6"></i>
+                        <p class="mt-2 small">Brak nadchodzących wydarzeń</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
