@@ -19,4 +19,9 @@ urlpatterns = [
     path('kalendarz/edytuj/<int:pk>/', views.event_edit, name='event_edit'),
     path('kalendarz/usun/<int:pk>/', views.event_delete, name='event_delete'),
     path('api/kalendarz/', views.calendar_api, name='calendar_api'),
+    # Notatki dnia
+    path('notatka/dodaj/<str:date_str>/', views.note_add, name='note_add'),
+    path('notatka/edytuj/<int:pk>/', views.note_edit, name='note_edit'),
+    path('notatka/usun/<int:pk>/', views.note_delete, name='note_delete'),
+    path('notatka/toggle/<int:pk>/', views.note_toggle, name='note_toggle'),
 ]

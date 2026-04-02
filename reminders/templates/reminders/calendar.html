@@ -1,163 +1,285 @@
 {% extends 'reminders/base.html' %}
+{% load i18n %}
 
 {% block title %}Kalendarz - {{ month_name }} {{ year }}{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <style>
-    .cal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
+    /* ── Kalendarz ── */
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .cal-title { font-size: 1.1rem; font-weight: 700; }
+    .cal-nav { width: 36px; height: 36px; border-radius: 50%; border: none; background: white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center;
+        color: #667eea; font-size: 1rem; text-decoration: none; transition: all 0.2s; }
+    .cal-nav:hover { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+    .cal-weekday { text-align: center; font-size: 0.7rem; color: #9ca3af; font-weight: 600;
+        text-transform: uppercase; padding: 6px 0; }
+    .cal-day-cell {
+        background: white; border-radius: 10px; min-height: 52px; padding: 4px;
+        cursor: pointer; transition: all 0.15s; position: relative;
+        display: flex; flex-direction: column; align-items: center;
     }
-    .cal-nav-btn {
-        width: 40px; height: 40px; border-radius: 50%; border: none;
-        background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        display: flex; align-items: center; justify-content: center;
-        color: #667eea; font-size: 1.2rem; transition: all 0.2s;
-        text-decoration: none;
-    }
-    .cal-nav-btn:hover { background: linear-gradient(135deg, #667eea, #764ba2); color: white; transform: scale(1.1); }
-    .cal-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
-    .cal-table th { text-align: center; padding: 10px; font-size: 0.8rem; color: #6b7280; font-weight: 600; text-transform: uppercase; }
-    .cal-cell {
-        background: white; border-radius: 12px; vertical-align: top;
-        padding: 8px; height: 120px; transition: all 0.2s; position: relative; cursor: pointer;
-    }
-    .cal-cell:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.1); transform: translateY(-1px); }
-    .cal-cell.other-month { background: #f9fafb; opacity: 0.5; }
-    .cal-cell.today { box-shadow: 0 0 0 2px #667eea; }
-    .cal-day { font-weight: 700; font-size: 0.85rem; color: #374151; margin-bottom: 4px; }
-    .cal-cell.today .cal-day {
+    .cal-day-cell:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.12); }
+    .cal-day-cell.other { opacity: 0.35; }
+    .cal-day-cell.today { box-shadow: 0 0 0 2px #667eea; }
+    .cal-day-cell.selected { box-shadow: 0 0 0 2px #764ba2; background: #f3f0ff; }
+    .cal-day-num { font-size: 0.8rem; font-weight: 600; color: #374151; }
+    .cal-day-cell.today .cal-day-num {
         background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white; width: 26px; height: 26px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
+        color: white; width: 24px; height: 24px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
     }
-    .cal-event {
-        display: flex; align-items: center; gap: 3px;
-        padding: 2px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 500;
-        margin-bottom: 2px; color: white; text-decoration: none; transition: all 0.2s;
-        overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    .cal-dots { display: flex; gap: 3px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
+    .cal-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* Kolory tła komórek */
+    .cal-day-cell.bg-wolne { background: #fef2f2; }
+    .cal-day-cell.bg-zajecia { background: #eff6ff; }
+    .cal-day-cell.bg-egzamin { background: #fef9c3; }
+    .cal-day-cell.bg-kolokwium { background: #fff7ed; }
+
+    /* Desktop: większe komórki */
+    @media (min-width: 769px) {
+        .cal-day-cell { min-height: 80px; padding: 6px; align-items: flex-start; }
+        .cal-event-mini { display: block; }
+        .cal-dots { display: none; }
     }
-    .cal-event:hover { filter: brightness(1.15); color: white; }
-    .cal-more { font-size: 0.6rem; color: #6b7280; text-align: center; }
-    .sidebar-event {
-        display: flex; align-items: center; gap: 12px;
+    @media (max-width: 768px) {
+        .cal-event-mini { display: none; }
+    }
+    .cal-event-mini {
+        font-size: 0.6rem; padding: 1px 4px; border-radius: 4px;
+        color: white; margin-top: 2px; white-space: nowrap; overflow: hidden;
+        text-overflow: ellipsis; max-width: 100%;
+    }
+
+    /* ── Panel boczny / dolny ── */
+    .day-panel { background: white; border-radius: 14px; box-shadow: 0 2px 15px rgba(0,0,0,0.08); }
+    .day-panel-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white; padding: 14px 16px; border-radius: 14px 14px 0 0;
+    }
+    .note-card {
         padding: 12px; border-radius: 10px; background: #f9fafb;
         margin-bottom: 8px; transition: all 0.2s;
     }
-    .sidebar-event:hover { background: #f0f2f5; }
-    .sidebar-icon {
-        width: 36px; height: 36px; border-radius: 8px;
-        display: flex; align-items: center; justify-content: center;
-        color: white; font-size: 1rem; flex-shrink: 0;
+    .note-card:hover { background: #f0f2f5; }
+    .note-card.done { opacity: 0.5; }
+    .note-card.done .note-subject { text-decoration: line-through; }
+    .quiz-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 0.7rem; padding: 2px 8px; border-radius: 12px;
+        font-weight: 600;
     }
-    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
-    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #4b5563; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
-</style>
+    .quiz-good { background: #dcfce7; color: #166534; }
+    .quiz-mid { background: #fef9c3; color: #854d0e; }
+    .quiz-bad { background: #fef2f2; color: #991b1b; }
 
-<div class="row">
+    /* Legenda */
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 0.75rem; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; color: #6b7280; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
+
+    @media (max-width: 768px) {
+        .cal-grid { gap: 2px; }
+        .cal-day-cell { min-height: 44px; border-radius: 8px; }
+        .cal-day-num { font-size: 0.75rem; }
+        .cal-title { font-size: 1rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
     <!-- Kalendarz -->
-    <div class="col-lg-8">
+    <div class="{% if selected_date %}col-lg-7{% else %}col-lg-8{% endif %}">
         <div class="cal-header">
-            <a href="?year={{ prev_year }}&month={{ prev_month }}" class="cal-nav-btn">
+            <a href="?year={{ prev_year }}&month={{ prev_month }}" class="cal-nav">
                 <i class="bi bi-chevron-left"></i>
             </a>
-            <h3 class="mb-0">
+            <span class="cal-title">
                 <i class="bi bi-calendar3" style="color: #667eea;"></i>
                 {{ month_name }} {{ year }}
-            </h3>
-            <a href="?year={{ next_year }}&month={{ next_month }}" class="cal-nav-btn">
+            </span>
+            <a href="?year={{ next_year }}&month={{ next_month }}" class="cal-nav">
                 <i class="bi bi-chevron-right"></i>
             </a>
         </div>
 
-        <div class="table-responsive">
-            <table class="cal-table">
-                <thead>
-                    <tr>
-                        <th>Pon</th><th>Wt</th><th>Śr</th><th>Czw</th><th>Pt</th><th>Sob</th><th>Ndz</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for week in weeks %}
-                    <tr>
-                        {% for day in week %}
-                        <td class="cal-cell {% if not day.in_month %}other-month{% endif %} {% if day.is_today %}today{% endif %}"
-                            onclick="window.location.href='{% url 'event_add' %}?date={{ day.date|date:'Y-m-d' }}'">
-                            <div class="cal-day">{{ day.day }}</div>
-                            {% for e in day.events %}
-                                {% if forloop.counter <= 2 %}
-                                <a href="{% url 'event_edit' e.pk %}" class="cal-event d-block"
-                                   style="background-color: {{ e.color }};"
-                                   title="{{ e.title }} - {{ e.get_event_type_display }}{% if e.time %} o {{ e.time|time:'H:i' }}{% endif %}"
-                                   onclick="event.stopPropagation();">
-                                    <i class="bi {{ e.icon }}"></i> {{ e.title }}
-                                </a>
-                                {% endif %}
-                                {% if forloop.counter == 3 %}
-                                <div class="cal-more">+{{ day.events|length|add:"-2" }} więcej</div>
-                                {% endif %}
-                            {% endfor %}
-                        </td>
+        <div class="cal-grid">
+            <div class="cal-weekday">Pn</div>
+            <div class="cal-weekday">Wt</div>
+            <div class="cal-weekday">Śr</div>
+            <div class="cal-weekday">Cz</div>
+            <div class="cal-weekday">Pt</div>
+            <div class="cal-weekday">Sb</div>
+            <div class="cal-weekday">Nd</div>
+
+            {% for week in weeks %}
+                {% for day in week %}
+                <div class="cal-day-cell {% if not day.in_month %}other{% endif %} {% if day.is_today %}today{% endif %} {% if selected_date and day.date == selected_date %}selected{% endif %} {% for e in day.events %}{% if e.event_type == 'wolne' %}bg-wolne {% elif e.event_type == 'zajecia' %}bg-zajecia {% elif e.event_type == 'egzamin' %}bg-egzamin {% elif e.event_type == 'kolokwium' %}bg-kolokwium {% endif %}{% endfor %}"
+                     onclick="window.location.href='?year={{ year }}&month={{ month }}&day={{ day.date|date:'Y-m-d' }}'">
+                    <div class="cal-day-num">{{ day.day }}</div>
+                    <!-- Kropki na mobile -->
+                    {% if day.events %}
+                    <div class="cal-dots">
+                        {% for e in day.events %}
+                            {% if forloop.counter <= 4 %}
+                            <div class="cal-dot" style="background: {{ e.color }};"></div>
+                            {% endif %}
                         {% endfor %}
-                    </tr>
+                    </div>
+                    {% endif %}
+                    <!-- Mini eventy na desktop -->
+                    {% for e in day.events %}
+                        {% if forloop.counter <= 2 %}
+                        <div class="cal-event-mini" style="background: {{ e.color }};">
+                            <i class="bi {{ e.icon }}"></i> {{ e.title|truncatechars:14 }}
+                        </div>
+                        {% endif %}
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+                {% endfor %}
+            {% endfor %}
         </div>
 
         <div class="legend">
+            <span class="legend-item"><span class="legend-swatch" style="background: #fef2f2;"></span> Wolne</span>
+            <span class="legend-item"><span class="legend-swatch" style="background: #eff6ff;"></span> Zajęcia</span>
+            <span class="legend-item"><span class="legend-swatch" style="background: #fef9c3;"></span> Egzamin</span>
+            <span class="legend-item"><span class="legend-swatch" style="background: #fff7ed;"></span> Kolokwium</span>
             {% for value, label in event_types %}
             <span class="legend-item">
-                <span class="legend-dot" style="background: {% if value == 'wolne' %}#22c55e{% elif value == 'egzamin' %}#ef4444{% elif value == 'kolokwium' %}#f59e0b{% elif value == 'projekt' %}#8b5cf6{% elif value == 'spotkanie' %}#3b82f6{% elif value == 'wyjazd' %}#06b6d4{% elif value == 'impreza' %}#ec4899{% else %}#6b7280{% endif %};"></span>
+                <span class="cal-dot" style="background: {% if value == 'wolne' %}#22c55e{% elif value == 'zajecia' %}#3b82f6{% elif value == 'egzamin' %}#ef4444{% elif value == 'kolokwium' %}#f59e0b{% elif value == 'projekt' %}#8b5cf6{% elif value == 'spotkanie' %}#06b6d4{% elif value == 'wyjazd' %}#14b8a6{% elif value == 'impreza' %}#ec4899{% else %}#6b7280{% endif %};"></span>
                 {{ label }}
             </span>
             {% endfor %}
         </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <a href="{% url 'event_add' %}{% if selected_date %}?date={{ selected_date|date:'Y-m-d' }}{% endif %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg"></i> Wydarzenie
+            </a>
+        </div>
     </div>
 
-    <!-- Sidebar -->
-    <div class="col-lg-4">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0"><i class="bi bi-list-ul" style="color: #667eea;"></i> Nadchodzące</h5>
-                    <a href="{% url 'event_add' %}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-lg"></i> Dodaj
+    <!-- Panel boczny: notatki wybranego dnia -->
+    <div class="{% if selected_date %}col-lg-5{% else %}col-lg-4{% endif %}">
+        {% if selected_date %}
+        <div class="day-panel">
+            <div class="day-panel-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold" style="font-size: 1.1rem;">{{ selected_date|date:"d.m.Y" }}</div>
+                        <div class="opacity-75" style="font-size: 0.8rem;">
+                            {% if selected_date|date:"l" == "Monday" %}Poniedziałek{% elif selected_date|date:"l" == "Tuesday" %}Wtorek{% elif selected_date|date:"l" == "Wednesday" %}Środa{% elif selected_date|date:"l" == "Thursday" %}Czwartek{% elif selected_date|date:"l" == "Friday" %}Piątek{% elif selected_date|date:"l" == "Saturday" %}Sobota{% else %}Niedziela{% endif %}
+                        </div>
+                    </div>
+                    <a href="{% url 'note_add' selected_date|date:'Y-m-d' %}" class="btn btn-sm btn-light">
+                        <i class="bi bi-plus-lg"></i> Zajęcia
                     </a>
                 </div>
-
-                {% if upcoming_events %}
-                    {% for e in upcoming_events %}
-                    <div class="sidebar-event">
-                        <div class="sidebar-icon" style="background-color: {{ e.color }};">
+            </div>
+            <div class="p-3">
+                <!-- Wydarzenia tego dnia -->
+                {% if day_events %}
+                <div class="mb-3">
+                    <div class="text-muted small fw-semibold mb-2"><i class="bi bi-calendar-event"></i> Wydarzenia</div>
+                    {% for e in day_events %}
+                    <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background: {{ e.bg_color|default:'#f9fafb' }};">
+                        <div class="category-icon" style="background: {{ e.color }}; width: 30px; height: 30px; font-size: 0.8rem;">
                             <i class="bi {{ e.icon }}"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <div class="fw-semibold small">{{ e.title }}</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">
-                                <i class="bi bi-calendar"></i> {{ e.date|date:"d.m.Y" }}
-                                {% if e.end_date %} - {{ e.end_date|date:"d.m.Y" }}{% endif %}
-                                {% if e.time %} <i class="bi bi-clock ms-1"></i> {{ e.time|time:"H:i" }}{% endif %}
+                            <div class="fw-semibold" style="font-size: 0.8rem;">{{ e.title }}</div>
+                            <div class="text-muted" style="font-size: 0.65rem;">
+                                {{ e.get_event_type_display }}
+                                {% if e.time %} &middot; {{ e.time|time:"H:i" }}{% endif %}
                             </div>
-                            <span class="badge badge-status mt-1" style="background-color: {{ e.color }}; font-size: 0.6rem;">{{ e.get_event_type_display }}</span>
                         </div>
-                        <div class="d-flex gap-1">
-                            <a href="{% url 'event_edit' e.pk %}" class="btn btn-sm btn-outline-primary py-0 px-1" title="Edytuj"><i class="bi bi-pencil"></i></a>
-                            <a href="{% url 'event_delete' e.pk %}" class="btn btn-sm btn-outline-danger py-0 px-1" title="Usuń"><i class="bi bi-trash"></i></a>
+                        <a href="{% url 'event_edit' e.pk %}" class="text-muted"><i class="bi bi-pencil"></i></a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Notatki / zajęcia -->
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="text-muted small fw-semibold"><i class="bi bi-journal-text"></i> Zajęcia / notatki</div>
+                </div>
+
+                {% if day_notes %}
+                    {% for n in day_notes %}
+                    <div class="note-card {% if n.is_done %}done{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <form method="post" action="{% url 'note_toggle' n.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent">
+                                            <i class="bi {% if n.is_done %}bi-check-circle-fill text-success{% else %}bi-circle text-muted{% endif %}" style="font-size: 1.1rem;"></i>
+                                        </button>
+                                    </form>
+                                    <span class="note-subject fw-semibold" style="font-size: 0.85rem;">{{ n.subject }}</span>
+                                </div>
+
+                                {% if n.note %}
+                                <div class="text-muted mt-1" style="font-size: 0.75rem; margin-left: 28px;">{{ n.note }}</div>
+                                {% endif %}
+
+                                {% if n.has_quiz %}
+                                <div class="mt-1" style="margin-left: 28px;">
+                                    <span class="quiz-badge {% if n.quiz_percent >= 70 %}quiz-good{% elif n.quiz_percent >= 50 %}quiz-mid{% elif n.quiz_percent != None %}quiz-bad{% else %}quiz-mid{% endif %}">
+                                        <i class="bi bi-pencil-square"></i> Wejściówka
+                                        {% if n.quiz_score != None %}
+                                            - {{ n.quiz_score }}/{{ n.quiz_max }} pkt
+                                            {% if n.quiz_percent != None %}({{ n.quiz_percent }}%){% endif %}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% endif %}
+
+                                {% if n.homework %}
+                                <div class="mt-1" style="margin-left: 28px;">
+                                    <span class="text-muted" style="font-size: 0.7rem;">
+                                        <i class="bi bi-list-task"></i> {{ n.homework }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-1 ms-2">
+                                <a href="{% url 'note_edit' n.pk %}" class="btn btn-sm btn-outline-primary py-0 px-1"><i class="bi bi-pencil"></i></a>
+                                <a href="{% url 'note_delete' n.pk %}" class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash"></i></a>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
                 {% else %}
-                    <div class="text-center py-4 text-muted">
-                        <i class="bi bi-calendar-x display-6"></i>
-                        <p class="mt-2 small">Brak nadchodzących wydarzeń</p>
+                    <div class="text-center py-3 text-muted" style="font-size: 0.8rem;">
+                        <i class="bi bi-journal-plus display-6 d-block mb-2"></i>
+                        Brak notatek na ten dzień
                     </div>
                 {% endif %}
+
+                <a href="{% url 'note_add' selected_date|date:'Y-m-d' %}" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                    <i class="bi bi-plus"></i> Dodaj zajęcia
+                </a>
             </div>
         </div>
+        {% else %}
+        <div class="day-panel">
+            <div class="day-panel-header">
+                <div class="fw-bold"><i class="bi bi-hand-index"></i> Kliknij w dzień</div>
+                <div class="opacity-75" style="font-size: 0.8rem;">aby zobaczyć zajęcia i notatki</div>
+            </div>
+            <div class="p-4 text-center text-muted">
+                <i class="bi bi-calendar-week display-4 d-block mb-2"></i>
+                <p class="small">Wybierz dzień na kalendarzu żeby zobaczyć lub dodać zajęcia, wejściówki i notatki.</p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

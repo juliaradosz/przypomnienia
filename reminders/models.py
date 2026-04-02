@@ -104,12 +104,10 @@ class Reminder(models.Model):
         return 'ok'
 
     def complete_and_renew(self):
-        """Oznacz jako wykonane, lub przesuń datę jeśli cykliczne."""
         if self.repeat == 'none':
             self.is_done = True
             self.save()
             return None
-
         delta_map = {
             'weekly': datetime.timedelta(weeks=1),
             'biweekly': datetime.timedelta(weeks=2),
@@ -131,6 +129,7 @@ class Reminder(models.Model):
 class Event(models.Model):
     TYPE_CHOICES = [
         ('wolne', 'Dzień wolny'),
+        ('zajecia', 'Zajęcia'),
         ('egzamin', 'Egzamin'),
         ('kolokwium', 'Kolokwium'),
         ('projekt', 'Oddanie projektu'),
@@ -142,6 +141,7 @@ class Event(models.Model):
 
     TYPE_ICONS = {
         'wolne': 'bi-sun',
+        'zajecia': 'bi-book',
         'egzamin': 'bi-mortarboard',
         'kolokwium': 'bi-pencil-square',
         'projekt': 'bi-folder-check',
@@ -153,13 +153,22 @@ class Event(models.Model):
 
     TYPE_COLORS = {
         'wolne': '#22c55e',
+        'zajecia': '#3b82f6',
         'egzamin': '#ef4444',
         'kolokwium': '#f59e0b',
         'projekt': '#8b5cf6',
-        'spotkanie': '#3b82f6',
-        'wyjazd': '#06b6d4',
+        'spotkanie': '#06b6d4',
+        'wyjazd': '#14b8a6',
         'impreza': '#ec4899',
         'inne': '#6b7280',
+    }
+
+    # Kolory tła komórek kalendarza (delikatne)
+    TYPE_BG_COLORS = {
+        'wolne': '#fef2f2',      # lekko różowo-czerwony
+        'zajecia': '#eff6ff',    # lekko niebieski
+        'egzamin': '#fef9c3',    # lekko żółty
+        'kolokwium': '#fff7ed',  # lekko pomarańczowy
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='events')
@@ -191,11 +200,14 @@ class Event(models.Model):
         return self.TYPE_COLORS.get(self.event_type, '#6b7280')
 
     @property
+    def bg_color(self):
+        return self.TYPE_BG_COLORS.get(self.event_type, '')
+
+    @property
     def is_multiday(self):
         return self.end_date and self.end_date > self.date
 
     def dates_range(self):
-        """Zwraca listę wszystkich dat wydarzenia."""
         if not self.end_date or self.end_date <= self.date:
             return [self.date]
         days = []
@@ -204,3 +216,33 @@ class Event(models.Model):
             days.append(current)
             current += datetime.timedelta(days=1)
         return days
+
+
+class DayNote(models.Model):
+    """Notatki do konkretnego dnia - zajęcia, wejściówki, punkty."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='day_notes')
+    date = models.DateField('Data')
+    subject = models.CharField('Przedmiot', max_length=200)
+    note = models.TextField('Notatka / co do zrobienia', blank=True)
+    has_quiz = models.BooleanField('Wejściówka', default=False)
+    quiz_score = models.DecimalField('Punkty z wejściówki', max_digits=5, decimal_places=1,
+                                     blank=True, null=True)
+    quiz_max = models.DecimalField('Max punktów', max_digits=5, decimal_places=1,
+                                   blank=True, null=True)
+    homework = models.TextField('Zadanie domowe / do zrobienia', blank=True)
+    is_done = models.BooleanField('Zrobione', default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date', 'subject']
+        verbose_name = 'Notatka dnia'
+        verbose_name_plural = 'Notatki dnia'
+
+    def __str__(self):
+        return f'{self.subject} - {self.date}'
+
+    @property
+    def quiz_percent(self):
+        if self.quiz_score is not None and self.quiz_max and self.quiz_max > 0:
+            return round(float(self.quiz_score) / float(self.quiz_max) * 100)
+        return None

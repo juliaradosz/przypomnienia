@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Reminder, Event
+from .models import Reminder, Event, DayNote
 
 
 class RegisterForm(UserCreationForm):
@@ -59,4 +59,19 @@ class EventForm(forms.ModelForm):
             'event_type': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Opcjonalny opis...'}),
             'all_day': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class DayNoteForm(forms.ModelForm):
+    class Meta:
+        model = DayNote
+        fields = ['subject', 'note', 'has_quiz', 'quiz_score', 'quiz_max', 'homework', 'is_done']
+        widgets = {
+            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Np. Matematyka'}),
+            'note': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Notatki z zajęć...'}),
+            'has_quiz': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'quiz_score': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'step': '0.5'}),
+            'quiz_max': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '10', 'step': '0.5'}),
+            'homework': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Zadanie domowe / do przygotowania...'}),
+            'is_done': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

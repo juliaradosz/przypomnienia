@@ -7,8 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Reminder, Event
-from .forms import RegisterForm, ReminderForm, EventForm
+from .models import Reminder, Event, DayNote
+from .forms import RegisterForm, ReminderForm, EventForm, DayNoteForm
 
 
 def register_view(request):
@@ -129,14 +129,12 @@ def reminder_complete(request, pk):
 # ── KALENDARZ ──────────────────────────────────────────────
 
 def _build_calendar(year, month, events_qs):
-    """Buduje strukturę kalendarza z wydarzeniami."""
     today = date.today()
     first_day = date(year, month, 1)
     start_weekday = first_day.weekday()
     cal_start = first_day - timedelta(days=start_weekday)
     cal_end = cal_start + timedelta(days=41)
 
-    # Zbierz wszystkie daty z wydarzeń (w tym wielodniowe)
     events_by_date = {}
     for e in events_qs:
         for d in e.dates_range():
@@ -148,12 +146,22 @@ def _build_calendar(year, month, events_qs):
     for _ in range(6):
         week = []
         for _ in range(7):
+            day_events = events_by_date.get(current, [])
+            # Kolor tła: priorytet wolne > zajęcia > egzamin > kolokwium
+            bg = ''
+            for e in day_events:
+                if e.bg_color:
+                    bg = e.bg_color
+                    if e.event_type == 'wolne':
+                        break  # wolne ma najwyższy priorytet
+
             week.append({
                 'date': current,
                 'day': current.day,
                 'in_month': current.month == month,
                 'is_today': current == today,
-                'events': events_by_date.get(current, []),
+                'events': day_events,
+                'bg_color': bg,
             })
             current += timedelta(days=1)
         weeks.append(week)
@@ -189,19 +197,34 @@ def calendar_view(request):
     today = date.today()
     year = int(request.GET.get('year', today.year))
     month = int(request.GET.get('month', today.month))
+    selected_date_str = request.GET.get('day', '')
+
+    if selected_date_str:
+        try:
+            parts = selected_date_str.split('-')
+            selected_date = date(int(parts[0]), int(parts[1]), int(parts[2]))
+        except (ValueError, IndexError):
+            selected_date = today
+    else:
+        selected_date = None
 
     events = Event.objects.filter(user=request.user)
     cal = _build_calendar(year, month, events)
 
-    # Lista nadchodzących wydarzeń (sidebar)
-    upcoming_events = Event.objects.filter(
-        user=request.user, date__gte=today
-    ).order_by('date')[:10]
+    # Notatki i wydarzenia wybranego dnia
+    day_notes = []
+    day_events = []
+    if selected_date:
+        day_notes = DayNote.objects.filter(user=request.user, date=selected_date)
+        day_events = Event.objects.filter(user=request.user)
+        day_events = [e for e in day_events if selected_date in e.dates_range()]
 
     return render(request, 'reminders/calendar.html', {
         **cal,
-        'upcoming_events': upcoming_events,
         'event_types': Event.TYPE_CHOICES,
+        'selected_date': selected_date,
+        'day_notes': day_notes,
+        'day_events': day_events,
     })
 
 
@@ -247,6 +270,75 @@ def event_delete(request, pk):
     return render(request, 'reminders/event_confirm_delete.html', {'event': event})
 
 
+# ── NOTATKI DNIA ───────────────────────────────────────────
+
+@login_required
+def note_add(request, date_str):
+    try:
+        parts = date_str.split('-')
+        note_date = date(int(parts[0]), int(parts[1]), int(parts[2]))
+    except (ValueError, IndexError):
+        return redirect('calendar')
+
+    if request.method == 'POST':
+        form = DayNoteForm(request.POST)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.user = request.user
+            note.date = note_date
+            note.save()
+            messages.success(request, 'Notatka dodana!')
+            return redirect(f'/kalendarz/?year={note_date.year}&month={note_date.month}&day={date_str}')
+    else:
+        form = DayNoteForm()
+    return render(request, 'reminders/note_form.html', {
+        'form': form,
+        'title': f'Dodaj zajęcia - {note_date.strftime("%d.%m.%Y")}',
+        'note_date': note_date,
+    })
+
+
+@login_required
+def note_edit(request, pk):
+    note = get_object_or_404(DayNote, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = DayNoteForm(request.POST, instance=note)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Notatka zaktualizowana!')
+            ds = note.date.strftime('%Y-%m-%d')
+            return redirect(f'/kalendarz/?year={note.date.year}&month={note.date.month}&day={ds}')
+    else:
+        form = DayNoteForm(instance=note)
+    return render(request, 'reminders/note_form.html', {
+        'form': form,
+        'title': f'Edytuj - {note.subject}',
+        'note_date': note.date,
+    })
+
+
+@login_required
+def note_delete(request, pk):
+    note = get_object_or_404(DayNote, pk=pk, user=request.user)
+    note_date = note.date
+    if request.method == 'POST':
+        note.delete()
+        messages.success(request, 'Notatka usunięta!')
+        ds = note_date.strftime('%Y-%m-%d')
+        return redirect(f'/kalendarz/?year={note_date.year}&month={note_date.month}&day={ds}')
+    return render(request, 'reminders/note_confirm_delete.html', {'note': note})
+
+
+@login_required
+def note_toggle(request, pk):
+    note = get_object_or_404(DayNote, pk=pk, user=request.user)
+    if request.method == 'POST':
+        note.is_done = not note.is_done
+        note.save()
+    ds = note.date.strftime('%Y-%m-%d')
+    return redirect(f'/kalendarz/?year={note.date.year}&month={note.date.month}&day={ds}')
+
+
 @login_required
 def calendar_api(request):
     start = request.GET.get('start')
@@ -256,7 +348,6 @@ def calendar_api(request):
         events = events.filter(date__gte=start)
     if end:
         events = events.filter(date__lte=end)
-
     result = []
     for e in events:
         result.append({
